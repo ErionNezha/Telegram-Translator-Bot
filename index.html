@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<!-- Created by Erion Nezha — © 2026 All rights reserved -->
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telegram Translator Bot — Erion Nezha</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif; background:#0b0f14; color:#e6edf3; min-height:100vh; }
+  header { background:linear-gradient(135deg,#0d2137,#123); padding:36px 20px; text-align:center; border-bottom:1px solid #1c2b3f; }
+  header h1 { font-size:28px; margin-bottom:8px; }
+  header p { color:#8b9bab; max-width:640px; margin:0 auto 10px; line-height:1.6; font-size:14px; }
+  .badge { display:inline-block; background:#3a2f0b; color:#f5c542; font-size:12px; padding:5px 12px; border-radius:20px; }
+  .tabs { display:flex; justify-content:center; gap:8px; padding:18px 16px 0; }
+  .tab { background:#161e28; border:1px solid #2a3646; color:#8b9bab; padding:10px 28px; border-radius:10px 10px 0 0;
+          cursor:pointer; font-size:15px; font-weight:600; border-bottom:none; }
+  .tab.active { background:#1c2b3f; color:#fff; border-color:#37aee2; }
+  .panel { display:none; max-width:900px; margin:0 auto; padding:0 16px 30px; }
+  .panel.active { display:block; }
+  .demo-frame { width:100%; height:720px; border:1px solid #2a3646; border-radius:0 12px 12px 12px; background:#0e1621; }
+  .code-layout { background:#0d1117; border:1px solid #2a3646; border-radius:0 12px 12px 12px; overflow:hidden; }
+  .filebar { display:flex; gap:6px; padding:10px 12px; background:#161e28; border-bottom:1px solid #2a3646; flex-wrap:wrap; }
+  .filebtn { background:#0d1117; border:1px solid #2a3646; color:#8b9bab; font-size:12px; padding:6px 12px;
+              border-radius:6px; cursor:pointer; font-family:Consolas,monospace; }
+  .filebtn.active { border-color:#37aee2; color:#fff; }
+  pre { margin:0; padding:18px; overflow:auto; max-height:640px; font-size:13px; line-height:1.6; }
+  code { font-family:Consolas,'Courier New',monospace; color:#d6e2ee; white-space:pre; }
+  .err { color:#ff7b72; padding:18px; font-size:13px; }
+  footer { text-align:center; padding:22px; color:#5b6b7c; font-size:13px; border-top:1px solid #1c2b3f; margin-top:10px; }
+  footer b { color:#8b9bab; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🤖 Telegram Translator Bot</h1>
+  <p>Bot Telegram (Python) që përkthen çdo mesazh në 5 gjuhë: anglisht, spanjisht, arabisht, kinezisht dhe turqisht. Demoja më poshtë simulon përkthimin me një fjalor të vogël në browser.</p>
+  <span class="badge">SIMULIM — versioni real përdor Google Translate API</span>
+</header>
+<div class="tabs">
+  <button class="tab active" data-panel="demo">▶ Live Demo</button>
+  <button class="tab" data-panel="code">💻 Kodi Burim</button>
+</div>
+<div class="panel active" id="panel-demo">
+  <iframe class="demo-frame" src="demo/index.html" title="Live Demo"></iframe>
+</div>
+<div class="panel" id="panel-code">
+  <div class="code-layout">
+    <div class="filebar" id="filebar"></div>
+    <pre><code id="codeview">Duke ngarkuar...</code></pre>
+  </div>
+</div>
+<footer>Krijuar nga <b>Erion Nezha</b> — © 2026 Të gjitha të drejtat e rezervuara</footer>
+<script>
+(function () {
+  'use strict';
+  var FILES = ["demo/index.html", "original/bot.py"];
+  var filebar = document.getElementById('filebar');
+  var codeview = document.getElementById('codeview');
+
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function (x) { x.classList.remove('active'); });
+      t.classList.add('active');
+      document.getElementById('panel-' + t.getAttribute('data-panel')).classList.add('active');
+    });
+  });
+
+  function loadFile(path, btn) {
+    filebar.querySelectorAll('.filebtn').forEach(function (b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    codeview.textContent = 'Duke ngarkuar ' + path + '...';
+    fetch(path).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(function (txt) {
+      codeview.textContent = txt;
+    }).catch(function (e) {
+      codeview.innerHTML = '';
+      var d = document.createElement('div');
+      d.className = 'err';
+      d.textContent = 'Gabim në ngarkim: ' + e.message;
+      codeview.appendChild(d);
+    });
+  }
+
+  FILES.forEach(function (f, i) {
+    var b = document.createElement('button');
+    b.className = 'filebtn' + (i === 0 ? ' active' : '');
+    b.textContent = f;
+    b.addEventListener('click', function () { loadFile(f, b); });
+    filebar.appendChild(b);
+  });
+  if (FILES.length) loadFile(FILES[0], filebar.firstChild);
+})();
+</script>
+</body>
+</html>
