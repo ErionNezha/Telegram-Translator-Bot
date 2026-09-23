@@ -1,0 +1,16 @@
+PROVENANCE & LICENSE
+=======================
+Projekti: Telegram-Translator-Bot
+
+Provenienca: Kodi burim në dosjen original/ është një skript Python i shpërndarë
+publikisht në kanale/komunitete Telegram-i si shabllon bot-i. Autori origjinal
+nuk është verifikuar — NUK pretendohet autorësi mbi kodin origjinal.
+
+Përdorimi: Vetëm për qëllime edukative. Para ekzekutimit, lexo kodin dhe
+vendos kredencialet e tua (token / API ID / API Hash) — mos përdor vlera
+nga shembuj të huaj.
+
+Demoja në dosjen demo/ dhe faqja prezantuese (index.html) janë ndërtuar nga
+Erion Nezha — © 2026 Të gjitha të drejtat e rezervuara.
+
+Kodi origjinal ruhet i PAPREKUR në original/ si referencë.
