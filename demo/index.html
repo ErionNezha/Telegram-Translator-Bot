@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<!-- Created by Erion Nezha — © 2026 All rights reserved -->
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telegram Translator Bot — Demo</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif; background:#0e1621; color:#fff;
+         display:flex; justify-content:center; align-items:center; min-height:100vh; padding:16px; }
+  .phone { width:100%; max-width:460px; height:680px; max-height:94vh; background:#0e1621;
+           border-radius:24px; overflow:hidden; display:flex; flex-direction:column;
+           box-shadow:0 20px 60px rgba(0,0,0,.6); border:1px solid #1c2b3f; }
+  .chat-header { background:#17212b; padding:12px 16px; display:flex; align-items:center; gap:12px; }
+  .avatar { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#7b61ff,#4a3fd1);
+            display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .chat-name { font-weight:600; font-size:15px; }
+  .chat-status { font-size:12px; color:#37aee2; }
+  .sim-badge { background:#1c2b3f; color:#8b9bab; font-size:11px; text-align:center; padding:6px 10px; }
+  .sim-badge b { color:#f5c542; }
+  .messages { flex:1; overflow-y:auto; padding:16px 12px; display:flex; flex-direction:column; gap:8px; }
+  .msg { max-width:85%; padding:8px 12px; border-radius:12px; font-size:13.5px; line-height:1.5;
+         animation:pop .25s ease; word-wrap:break-word; white-space:pre-wrap; }
+  @keyframes pop { from { transform:scale(.92); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .msg.me { align-self:flex-end; background:#2b5278; border-bottom-right-radius:4px; }
+  .msg.bot { align-self:flex-start; background:#182533; border-bottom-left-radius:4px; font-family:Consolas,monospace; }
+  .msg .time { display:block; font-size:10px; color:#8b9bab; text-align:right; margin-top:4px; font-family:inherit; }
+  .typing { align-self:flex-start; background:#182533; padding:12px 16px; border-radius:12px; display:flex; gap:5px; }
+  .typing span { width:7px; height:7px; border-radius:50%; background:#8b9bab; animation:blink 1.2s infinite; }
+  .typing span:nth-child(2){ animation-delay:.2s; } .typing span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink { 0%,60%,100%{opacity:.3} 30%{opacity:1} }
+  .input-bar { background:#17212b; padding:10px 12px; display:flex; gap:8px; align-items:center; }
+  .input-bar input { flex:1; background:#0e1621; border:none; outline:none; color:#fff; font-size:14px;
+                     padding:10px 14px; border-radius:20px; }
+  .input-bar button { width:40px; height:40px; border-radius:50%; border:none; cursor:pointer;
+                      background:#2b5278; color:#fff; font-size:18px; flex-shrink:0; }
+  .input-bar button:hover { background:#37aee2; }
+  .hint { text-align:center; color:#5b6b7c; font-size:12px; padding:8px; }
+  footer { text-align:center; color:#5b6b7c; font-size:12px; padding:10px; background:#17212b; }
+  footer b { color:#8b9bab; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="chat-header">
+    <div class="avatar">🌐</div>
+    <div>
+      <div class="chat-name">Translator Bot</div>
+      <div class="chat-status">online — përkthen në 5 gjuhë</div>
+    </div>
+  </div>
+  <div class="sim-badge"><b>SIMULIM</b> — versioni real përdor Google Translate API</div>
+  <div class="messages" id="messages"></div>
+  <div class="hint">Shkruaj diçka (p.sh. "hello friend") dhe shiko përkthimin 👇</div>
+  <div class="input-bar">
+    <input type="text" id="input" placeholder="Shkruaj tekst për përkthim..." autocomplete="off">
+    <button id="send" aria-label="Dërgo">➤</button>
+  </div>
+  <footer>Krijuar nga <b>Erion Nezha</b></footer>
+</div>
+<script>
+(function () {
+  'use strict';
+  // Fjalor i vogël demonstrues: anglisht -> [EN, ES, AR, ZH, TR]
+  var DICT = {
+    'hello':      ['hello', 'hola', 'مرحبا', '你好', 'merhaba'],
+    'hi':         ['hi', 'hola', 'مرحبا', '嗨', 'selam'],
+    'good':       ['good', 'bueno', 'جيد', '好', 'iyi'],
+    'morning':    ['morning', 'mañana', 'صباح', '早上', 'sabah'],
+    'night':      ['night', 'noche', 'ليل', '夜晚', 'gece'],
+    'day':        ['day', 'día', 'يوم', '天', 'gün'],
+    'love':       ['love', 'amor', 'حب', '爱', 'aşk'],
+    'friend':     ['friend', 'amigo', 'صديق', '朋友', 'arkadaş'],
+    'thank':      ['thank', 'gracias', 'شكرا', '谢谢', 'teşekkür'],
+    'thanks':     ['thanks', 'gracias', 'شكرا', '谢谢', 'teşekkürler'],
+    'you':        ['you', 'tú', 'أنت', '你', 'sen'],
+    'yes':        ['yes', 'sí', 'نعم', '是', 'evet'],
+    'no':         ['no', 'no', 'لا', '不', 'hayır'],
+    'please':     ['please', 'por favor', 'من فضلك', '请', 'lütfen'],
+    'water':      ['water', 'agua', 'ماء', '水', 'su'],
+    'food':       ['food', 'comida', 'طعام', '食物', 'yemek'],
+    'house':      ['house', 'casa', 'بيت', '房子', 'ev'],
+    'car':        ['car', 'coche', 'سيارة', '汽车', 'araba'],
+    'book':       ['book', 'libro', 'كتاب', '书', 'kitap'],
+    'happy':      ['happy', 'feliz', 'سعيد', '快乐', 'mutlu'],
+    'beautiful':  ['beautiful', 'hermoso', 'جميل', '美丽', 'güzel'],
+    'how':        ['how', 'cómo', 'كيف', '怎么', 'nasıl'],
+    'are':        ['are', 'estás', 'أنت', '是', 'sin'],
+    'i':          ['I', 'yo', 'أنا', '我', 'ben'],
+    'we':         ['we', 'nosotros', 'نحن', '我们', 'biz'],
+    'and':        ['and', 'y', 'و', '和', 've'],
+    'the':        ['the', 'el/la', 'ال', '', ''],
+    'is':         ['is', 'es', 'هو', '是', 'dir'],
+    'my':         ['my', 'mi', 'لي', '我的', 'benim'],
+    'name':       ['name', 'nombre', 'اسم', '名字', 'isim'],
+    'time':       ['time', 'tiempo', 'وقت', '时间', 'zaman'],
+    'money':      ['money', 'dinero', 'مال', '钱', 'para'],
+    'work':       ['work', 'trabajo', 'عمل', '工作', 'iş'],
+    'school':     ['school', 'escuela', 'مدرسة', '学校', 'okul'],
+    'family':     ['family', 'familia', 'عائلة', '家庭', 'aile'],
+    'mother':     ['mother', 'madre', 'أم', '母亲', 'anne'],
+    'father':     ['father', 'padre', 'أب', '父亲', 'baba'],
+    'boy':        ['boy', 'niño', 'ولد', '男孩', 'oğlan'],
+    'girl':       ['girl', 'niña', 'بنت', '女孩', 'kız'],
+    'dog':        ['dog', 'perro', 'كلب', '狗', 'köpek'],
+    'cat':        ['cat', 'gato', 'قطة', '猫', 'kedi']
+  };
+  var LANGS = [
+    ['🇬🇧 English', 0], ['🇪🇸 Spanish', 1], ['🇮🇶 Arabic', 2], ['🇨🇳 Chinese', 3], ['🇹🇷 Turkish', 4]
+  ];
+
+  var box = document.getElementById('messages');
+  var input = document.getElementById('input');
+
+  function now() {
+    var d = new Date();
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function addMsg(html, who) {
+    var div = document.createElement('div');
+    div.className = 'msg ' + who;
+    div.innerHTML = html + '<span class="time">' + now() + '</span>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+  function translateWord(w, langIdx) {
+    var key = w.toLowerCase().replace(/[^a-zçë]/g, '');
+    if (DICT[key]) return DICT[key][langIdx] || w;
+    return w; // fjalë e panjohur: kalon siç është (si në demo)
+  }
+  function translate(text, langIdx) {
+    return text.split(/(\s+)/).map(function (tok) {
+      return /^\s+$/.test(tok) ? tok : translateWord(tok, langIdx);
+    }).join('');
+  }
+  function buildReply(text) {
+    var lines = ['▫️ Translated for : `' + text + '`'];
+    LANGS.forEach(function (L) {
+      lines.push('▫️' + L[0] + ' : `' + (translate(text, L[1]) || '—') + '`');
+    });
+    return lines.join('\n');
+  }
+  function showTyping() {
+    var t = document.createElement('div');
+    t.className = 'typing'; t.id = 'typing';
+    t.innerHTML = '<span></span><span></span><span></span>';
+    box.appendChild(t); box.scrollTop = box.scrollHeight;
+  }
+  function hideTyping() { var t = document.getElementById('typing'); if (t) t.remove(); }
+
+  function send() {
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addMsg(esc(text), 'me');
+    showTyping();
+    setTimeout(function () {
+      hideTyping();
+      addMsg(esc(buildReply(text)), 'bot');
+    }, 900);
+  }
+  document.getElementById('send').addEventListener('click', send);
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') send(); });
+  setTimeout(function () { addMsg(esc('👋 Më dërgo një mesazh dhe unë ta përkthej në 5 gjuhë!'), 'bot'); }, 400);
+})();
+</script>
+</body>
+</html>
